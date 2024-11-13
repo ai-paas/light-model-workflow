@@ -60,6 +60,7 @@ class ModelService:
 
         # 정의된 함수로 파이프라인 생성
         run = kfp_client.create_run_from_pipeline_func(
+            experiment_name="aipaas-lite-model-workflow",
             pipeline_func=lite_model,
             namespace=SETTINGS.KUBEFLOW_NAMESPACE,
         )
