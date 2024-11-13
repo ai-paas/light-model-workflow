@@ -17,62 +17,49 @@ router = APIRouter()
 """
 
 
-@router.post("/{model_name}/optimizers/{optimize_name}")
-async def lite_model(
+@router.post("/bert/optimizers/tensorrt")
+async def bert_trt(
     *,
     db: Session = SessionDepends,
-    model_name: SupportModel,
-    optimize_name: SupportOptimize,
-    request: Request,
+    optimize_form: ReqBertTRTForm,
     model_service: ModelService = Depends(get_model_service),
 ):
-    optimize_form = await request.json()
-    model_value = model_name.value
-    optimize_value = optimize_name.value
+    result = model_service.bert_trt(
+        db=db,
+        model_name=SupportModel.Bert.value,
+        optimize_name=SupportOptimize.TENSORRT.value,
+        optimize_form=optimize_form,
+    )
+    return result
 
-    try:  # Bert
-        if model_value == SupportModel.Bert.value:
-            if optimize_value == SupportOptimize.TENSORRT.value:
-                form = ReqBertTRTForm(**optimize_form)
-                result = model_service.bert_trt(
-                    db=db,
-                    model_name=model_value,
-                    optimize_name=optimize_value,
-                    optimize_form=form,
-                )
-            elif optimize_value == SupportOptimize.OPENVINO.value:
-                form = ReqBertOpenvinoForm(**optimize_form)
-                result = model_service.bert_openvino(
-                    db=db,
-                    model_name=model_value,
-                    optimize_name=optimize_value,
-                    optimize_form=form,
-                )
-            else:
-                raise HTTPException(status_code=400, detail="Invalid form data")
 
-        # OwlV2
-        elif model_value == SupportModel.OwlV2.value:
-            if optimize_value == SupportOptimize.PTQ.value:
-                form = ReqOwlV2PTQForm(**optimize_form)
-                result = model_service.owlv2_ptq(
-                    db=db,
-                    model_name=model_value,
-                    optimize_name=optimize_value,
-                    optimize_form=form,
-                )
-            else:
-                raise HTTPException(status_code=400, detail="Invalid form data")
+@router.post("/bert/optimizers/openvino")
+async def bert_openvino(
+    *,
+    db: Session = SessionDepends,
+    optimize_form: ReqBertOpenvinoForm,
+    model_service: ModelService = Depends(get_model_service),
+):
+    result = model_service.bert_openvino(
+        db=db,
+        model_name=SupportModel.Bert.value,
+        optimize_name=SupportOptimize.OPENVINO.value,
+        optimize_form=optimize_form,
+    )
+    return result
 
-        else:
-            raise HTTPException(status_code=400, detail="Invalid form data")
-    except ValidationError as e:
-        # Pydantic ValidationError 처리
-        raise HTTPException(status_code=422, detail=e.errors())
-    except HTTPException as e:
-        # 이미 발생한 HTTPException은 다시 raise
-        raise e
-    except Exception as e:
-        # 그 외의 모든 예외 처리
-        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/owlv2/optimizers/ptq")
+async def owlv2_ptq(
+    *,
+    db: Session = SessionDepends,
+    optimize_form: ReqOwlV2PTQForm,
+    model_service: ModelService = Depends(get_model_service),
+):
+    result = model_service.owlv2_ptq(
+        db=db,
+        model_name=SupportModel.OwlV2.value,
+        optimize_name=SupportOptimize.PTQ.value,
+        optimize_form=optimize_form,
+    )
     return result
