@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from pydantic import ValidationError
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.config.enums import SupportOptimize, SupportModel
 from app.core.db.connect import SessionDepends
