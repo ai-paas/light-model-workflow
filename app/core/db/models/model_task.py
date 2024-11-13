@@ -18,11 +18,8 @@ class ModelTask(Base):
     # 모델 이름
     model_name: Mapped[str] = orm.mapped_column(String, nullable=False)
 
-    # 원본 모델 경로
-    model_path_input: Mapped[str] = orm.mapped_column(String, nullable=False)
-
     # 경량화 방식
-    lite_id: Mapped[int] = orm.mapped_column(Integer, nullable=False)
+    task_type: Mapped[str] = orm.mapped_column(Integer, nullable=False)
 
     # 최적화된 모델 경로 (mlflow 작업 완료 후 rest api로 요청)
     model_path_output: Mapped[str] = orm.mapped_column(
