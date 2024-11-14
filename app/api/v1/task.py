@@ -8,7 +8,7 @@ from app.schemas.requests.task import PatchTaskForm
 router = APIRouter()
 
 """
-모델 이름을 입력받고 해당 모델을 경량화/최적화 후 mlflow에 저장하는 라우터
+모델의 경량화/최적화 작업을 관리하는 라우터 정의
 """
 
 
