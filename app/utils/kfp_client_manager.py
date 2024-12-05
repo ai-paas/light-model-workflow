@@ -11,6 +11,8 @@ import urllib3
 
 from app.core.settings import get_settings
 
+settings = get_settings()
+
 
 class KFPClientManager:
     """
@@ -19,25 +21,20 @@ class KFPClientManager:
 
     def __init__(
         self,
-        api_url: str,
-        dex_username: str,
-        dex_password: str,
-        dex_auth_type: str = "local",
-        skip_tls_verify: bool = False,
     ):
         """
         Initialize the KfpClient
-        :param api_url: the Kubeflow Pipelines API URL
-        :param skip_tls_verify: if True, skip TLS verification
-        :param dex_username: the Dex username
-        :param dex_password: the Dex password
-        :param dex_auth_type: the auth type to use if Dex has multiple enabled, one of: ['ldap', 'local']
+        : api_url: the Kubeflow Pipelines API URL
+        : skip_tls_verify: if True, skip TLS verification
+        : dex_username: the Dex username
+        : dex_password: the Dex password
+        : dex_auth_type: the auth type to use if Dex has multiple enabled, one of: ['ldap', 'local']
         """
-        self._api_url = api_url
-        self._skip_tls_verify = skip_tls_verify
-        self._dex_username = dex_username
-        self._dex_password = dex_password
-        self._dex_auth_type = dex_auth_type
+        self._api_url = f"{settings.KUBEFLOW_ENDPOINT}/pipeline"
+        self._skip_tls_verify = True
+        self._dex_username = settings.KUBEFLOW_USERNAME
+        self._dex_password = settings.KUBEFLOW_PASSWORD
+        self._dex_auth_type = "local"
         self._client = None
         # disable SSL verification, if requested
         if self._skip_tls_verify:
@@ -47,6 +44,10 @@ class KFPClientManager:
             raise ValueError(
                 f"Invalid `dex_auth_type` '{self._dex_auth_type}', must be one of: ['ldap', 'local']"
             )
+        self.kfp_client = self._create_kfp_client()
+
+    def get_kfp_client(self):
+        return self.kfp_client
 
     def _get_session_cookies(self) -> str:
         """
@@ -152,20 +153,3 @@ class KFPClientManager:
             host=self._api_url,
             cookies=session_cookies,
         )
-
-    def create_kfp_client(self) -> kfp.Client:
-        """Get a newly authenticated Kubeflow Pipelines client."""
-        return self._create_kfp_client()
-
-
-settings = get_settings()
-
-# 클라이언트 생성
-kfp_client_manager = KFPClientManager(
-    api_url=f"{settings.KUBEFLOW_ENDPOINT}/pipeline",
-    skip_tls_verify=True,
-    dex_username=settings.KUBEFLOW_USERNAME,
-    dex_password=settings.KUBEFLOW_PASSWORD,
-)
-# 클라이언트 객체 생성
-kfp_client = kfp_client_manager.create_kfp_client()

@@ -10,7 +10,7 @@ from app.core.settings import get_settings
 from app.schemas.requests import model
 from app.schemas.requests.model import ReqBertTRTForm
 from app.services.types import OptimizationTaskInfo
-from app.utils.kfp_client_manager import kfp_client
+from app.utils.kfp_client_manager import KFPClientManager
 
 SETTINGS = get_settings()
 
@@ -59,6 +59,9 @@ class ModelService:
             lite_model_component()
 
         # 정의된 함수로 파이프라인 생성
+
+        kfp_client = KFPClientManager().get_kfp_client()
+
         run = kfp_client.create_run_from_pipeline_func(
             experiment_name="aipaas-lite-model-workflow",
             pipeline_func=lite_model,
