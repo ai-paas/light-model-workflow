@@ -50,6 +50,10 @@ class ModelService:
                     uuid_str,
                     "--server_path",
                     f"{response_server_url}/api/v1/tasks",
+                    "--aws_access_key_id",
+                    SETTINGS.AWS_ACCESS_KEY_ID,
+                    "--aws_secret_access_key",
+                    SETTINGS.AWS_SECRET_ACCESS_KEY,
                 ],
             )
 

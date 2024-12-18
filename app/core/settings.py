@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # Owlv2
     OWLV2_PTQ: str
 
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+
     @property
     def get_db_uri(self) -> str:
         """Environment variables로부터 DB 정보를 받아와 URI를 반환 (차후 DB 적용시 입력)"""
