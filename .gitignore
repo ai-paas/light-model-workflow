@@ -10,3 +10,5 @@ __pycache__
 .idea
 # sqlite DB
 sqlite.db
+
+prod
