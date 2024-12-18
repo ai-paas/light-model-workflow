@@ -36,9 +36,15 @@ class Settings(BaseSettings):
 
     SERVER_URL: str
 
-    #mlflow 관련 설정
-    MLFLOW_TRACKING_URL:str
-    MLFLOW_S3_ENDPOINT_URL:str
+    # mlflow 관련 설정
+    MLFLOW_TRACKING_URL: str
+    MLFLOW_S3_ENDPOINT_URL: str
+
+    BERT_TRT: str
+    BERT_OPENVINO: str
+
+    # Owlv2
+    OWLV2_PTQ: str
 
     @property
     def get_db_uri(self) -> str:

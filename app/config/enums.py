@@ -1,4 +1,7 @@
 from enum import Enum
+from app.core.settings import get_settings
+
+SETTINGS = get_settings()
 
 
 class ModelLiteMapper(Enum):
@@ -7,25 +10,27 @@ class ModelLiteMapper(Enum):
     """
 
     # Bert
-    BERT_TRT = "aipaas-harbor.surromind.ai/trt-workflow/bert_trt_test:v0.5"
-    BERT_OPENVINO = "aipaas-harbor.surromind.ai/openvino-workflow/bert_openvino_test:v0.1"
+    BERT_TRT = SETTINGS.BERT_TRT
+    BERT_OPENVINO = SETTINGS.BERT_OPENVINO
 
     # Owlv2
-    OWLV2_PTQ = "aipaas-harbor.surromind.ai/ptq-workflow/owl_v2_ptq_test:v0.5"
-
+    OWLV2_PTQ = SETTINGS.OWLV2_PTQ
 
 
 class SupportModel(Enum):
     """
     지원하는 모델
     """
+
     Bert = "bert"
     OwlV2 = "owlv2"
+
 
 class SupportOptimize(Enum):
     """
     지원하는 최적화 / 경량화
     """
+
     PTQ = "ptq"
     TENSORRT = "tensorrt"
     OPENVINO = "openvino"
