@@ -60,7 +60,11 @@ class ModelService:
         # 파이프라인 정의
         @dsl.pipeline(name=f"{task_info.model_name}_{task_info.optimize_name}")
         def lite_model():
-            lite_model_component()
+            lite_model_task = lite_model_component()
+            # todo : gpu 작업을 구분햐여 해당 작업에만 가속기 설정
+            accelerator_type: str = "nvidia.com/gpu"
+            lite_model_task.set_accelerator_limit(1) # container_spec.resources.accelerator_limit
+            lite_model_task.container_spec.resources.accelerator_type = accelerator_type
 
         # 정의된 함수로 파이프라인 생성
 
