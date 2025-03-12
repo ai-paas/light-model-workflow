@@ -40,14 +40,20 @@ class Settings(BaseSettings):
     MLFLOW_TRACKING_URL: str
     MLFLOW_S3_ENDPOINT_URL: str
 
+    # Model Image
     BERT_TRT: str
     BERT_OPENVINO: str
 
     # Owlv2
     OWLV2_PTQ: str
 
+    # DETR_RESNET50
+    DETR_RESNET50: str
+
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
+
+    MLFLOW_HTTP_REQUEST_TIMEOUT: str
 
     @property
     def get_db_uri(self) -> str:

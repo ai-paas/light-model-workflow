@@ -16,6 +16,9 @@ class ModelLiteMapper(Enum):
     # Owlv2
     OWLV2_PTQ = SETTINGS.OWLV2_PTQ
 
+    # DETR-Resnet50
+    DETR_Resnet50 = SETTINGS.DETR_RESNET50
+
 
 class SupportModel(Enum):
     """
@@ -24,6 +27,7 @@ class SupportModel(Enum):
 
     Bert = "bert"
     OwlV2 = "owlv2"
+    DETR_Resnet50 = "detr-resnet50"
 
 
 class SupportOptimize(Enum):

@@ -30,3 +30,7 @@ class ReqBertTRTForm(ReqLiteModelBaseForm):
 
 class ReqBertOpenvinoForm(ReqLiteModelBaseForm):
     pass
+
+
+class ReqDetrResnetForm(ReqLiteModelBaseForm):
+    pass

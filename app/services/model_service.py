@@ -63,7 +63,7 @@ class ModelService:
             lite_model_task = lite_model_component()
             # todo : gpu 작업을 구분햐여 해당 작업에만 가속기 설정
             accelerator_type: str = "nvidia.com/gpu"
-            lite_model_task.set_accelerator_limit(1) # container_spec.resources.accelerator_limit
+            lite_model_task.set_accelerator_limit(1)  # container_spec.resources.accelerator_limit
             lite_model_task.container_spec.resources.accelerator_type = accelerator_type
 
         # 정의된 함수로 파이프라인 생성
@@ -182,6 +182,40 @@ class ModelService:
                 optimize_form.saved_model_run_id,
                 "--model_path",
                 optimize_form.saved_model_path,
+            ],
+        )
+
+        return self.run_optimize_task(db, task_info)
+
+    def detr_resnet50(
+        self,
+        db: Session,
+        model_name: SupportModel,
+        optimize_name: SupportOptimize,
+        optimize_form: model.ReqDetrResnetForm,
+    ) -> dict[str, any]:
+        """
+        DETR Resnet50 모델에 대한 최적화/경량화
+        """
+
+        task_info = OptimizationTaskInfo(
+            model_name=model_name,
+            optimize_name=optimize_name,
+            docker_image_path=ModelLiteMapper.DETR_Resnet50.value,
+            command=[
+                "pipenv",
+                "run",
+                "python",
+                "main.py",
+            ],
+            args=[
+                "--model_run_id",
+                optimize_form.saved_model_run_id,
+                "--model_path",
+                optimize_form.saved_model_path,
+                # 모델 다운로드에 시간이 많이 소요되므로 설정값(기본값 120초) 조정 필요
+                "--mlflow_http_request_timeout",
+                SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
             ],
         )
 

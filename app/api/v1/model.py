@@ -6,6 +6,7 @@ from app.schemas.requests.model import (
     ReqOwlV2PTQForm,
     ReqBertTRTForm,
     ReqBertOpenvinoForm,
+    ReqDetrResnetForm,
 )
 from app.services.model_service import ModelService, get_model_service
 
@@ -58,6 +59,22 @@ async def owlv2_ptq(
     result = model_service.owlv2_ptq(
         db=db,
         model_name=SupportModel.OwlV2.value,
+        optimize_name=SupportOptimize.PTQ.value,
+        optimize_form=optimize_form,
+    )
+    return result
+
+
+@router.post("/detr-resnet50/optimizers/ptq")
+async def detr_resnet50(
+    *,
+    db: Session = SessionDepends,
+    optimize_form: ReqDetrResnetForm,
+    model_service: ModelService = Depends(get_model_service),
+):
+    result = model_service.detr_resnet50(
+        db=db,
+        model_name=SupportModel.DETR_Resnet50.value,
         optimize_name=SupportOptimize.PTQ.value,
         optimize_form=optimize_form,
     )
