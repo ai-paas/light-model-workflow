@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # TENSORRT
     TENSORRT_IMG: str
 
+    # OpenVINO
+    OPENVINO_IMG: str
+
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
 

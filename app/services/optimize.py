@@ -121,3 +121,48 @@ class OptimizeService:
         result = self.run_optimize_task(self.db, task_info)
 
         return result
+
+    def openvino(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
+        """
+        OpenVINO 최적화 작업
+        Args:
+            model_name: 모델 이름
+            optimize_form: 최적화 폼
+            args: 추가 인자
+        Returns:
+            task_info: 최적화 작업 정보
+        """
+
+        # 사용할 도커 이미지 경로
+        container_image: str = SETTINGS.OPENVINO_IMG # 변경 필요
+
+        # 최적화 작업 정보
+        task_info = OptimizationSetUp(
+            model_name=optimize_form.model_name,
+            optimize_name=SupportOptimize.OPENVINO.value,
+            docker_image_path=container_image,
+            command=[
+                "pipenv",
+                "run",
+                "python",
+                "main.py",
+            ],
+            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
+            env={
+                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
+                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
+                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
+                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
+                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
+                "SERVER_UUID": get_uuid_str(),
+                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
+                "RUN_ID": optimize_form.saved_model_run_id,
+                "MODEL_PATH": optimize_form.saved_model_path,
+                "MODEL_NAME": optimize_form.model_name,
+            },
+            accelerator_type="cpu",
+        )
+
+        result = self.run_optimize_task(self.db, task_info)
+
+        return result
