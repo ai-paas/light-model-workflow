@@ -9,7 +9,7 @@ from app.core.db.models.model_task import ModelTask
 from app.core.settings import get_settings
 from app.schemas.requests import model
 from app.schemas.requests.model import ReqBertTRTForm
-from app.schemas.services.types import OptimizationTaskInfo
+from app.services.types import OptimizationTaskInfo
 from app.utils.kfp_client_manager import KFPClientManager
 
 SETTINGS = get_settings()
