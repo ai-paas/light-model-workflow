@@ -1,2 +1,3 @@
 sonar.projectKey=aipaas-lite-model-workflow-api
 sonar.qualitygate.wait=true
+
