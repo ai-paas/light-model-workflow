@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Any
 
-from app.config.enums import ModelLiteMapper
+from app.config.enums import ModelLiteMapper, SupportModel, SupportOptimize
 
 """
 Service layer에서 사용되는 type
