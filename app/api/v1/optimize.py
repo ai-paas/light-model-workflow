@@ -24,5 +24,7 @@ async def optimize(
         result = optimize_service.tensorrt(optimize_form)
     elif optimizer_id == 2: # 2: openvino
         result = optimize_service.openvino(optimize_form)
+    elif optimizer_id == 3: # 3: sklearn-onnx
+        result = optimize_service.sklearn_onnx(optimize_form)
     # pruning, npu, tpu, quantization, etc.
     return result
