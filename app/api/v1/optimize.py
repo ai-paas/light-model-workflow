@@ -20,6 +20,13 @@ async def optimize(
 ):
     result = None
     # hardcoded before refactor and apply db
-    if optimizer_id is not None:
+    if optimizer_id == 1: # 1: tensorrt
         result = optimize_service.tensorrt(optimize_form)
+    elif optimizer_id == 2: # 2: openvino
+        result = optimize_service.openvino(optimize_form)
+    elif optimizer_id == 3: # 3: sklearn-onnx
+        result = optimize_service.sklearn_onnx(optimize_form)
+    elif optimizer_id == 4: # 4: pruning
+        result = optimize_service.pruning(optimize_form)
+    # pruning, npu, tpu, quantization, etc.
     return result

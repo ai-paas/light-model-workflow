@@ -50,8 +50,17 @@ class Settings(BaseSettings):
     # DETR_RESNET50
     DETR_RESNET50: str
 
+    # Pruning
+    PRUNING_IMG: str
+
     # TENSORRT
     TENSORRT_IMG: str
+
+    # OpenVINO
+    OPENVINO_IMG: str
+
+    # SKLEARN_ONNX
+    SKLEARN_ONNX_IMG: str
 
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str

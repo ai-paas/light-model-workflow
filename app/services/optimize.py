@@ -14,6 +14,13 @@ SETTINGS = get_settings()
 
 
 def get_optimize_service(db: Session = SessionDepends):
+    """
+    최적화 서비스 레이어 의존성 주입을 위한 함수
+    Args:
+        db: 데이터베이스 세션 의존성
+    Returns:
+        OptimizeService: 최적화 서비스 레이어 인스턴스
+    """
     return OptimizeService(db=db)
 
 
@@ -23,6 +30,14 @@ class OptimizeService:
 
     @staticmethod
     def run_optimize_task(db: Session, task_info: OptimizationSetUp):
+        """
+        최적화 작업 실행
+        Args:
+            db: 데이터베이스 세션
+            task_info: 최적화 작업 정보
+        Returns:
+            task_info: 최적화 작업 정보
+        """
         
         @dsl.container_component
         # 사용할 컨테이너 정의 및 설정 추가
@@ -41,7 +56,7 @@ class OptimizeService:
         def lite_model():
             lite_model_task = lite_model_component()
 
-            if task_info.accelerator_type == "nvidia.com/gpu":
+            if task_info.accelerator_type != "cpu":
                 accelerator_type: str = task_info.accelerator_type
                 lite_model_task.set_accelerator_limit(1)  # container_spec.resources.accelerator_limit
                 lite_model_task.container_spec.resources.accelerator_type = accelerator_type
@@ -77,13 +92,51 @@ class OptimizeService:
 
         return {"task_uuid": uuid_str, "kubeflow_experiment_id": kubeflow_experiment_id}
 
+    def pruning(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
+        """
+        Pruning 경량화 작업
+        Args:
+            optimize_form: 경량화 폼
+        Returns:
+            task_info: 경량화 작업 정보
+        """
+        container_image: str = SETTINGS.PRUNING_IMG # 변경 필요
+        
+        task_info = OptimizationSetUp(
+            model_name=optimize_form.model_name,
+            optimize_name=SupportOptimize.PRUNING.value,
+            docker_image_path=container_image,
+            command=[
+                "pipenv",
+                "run",
+                "python",
+                "main.py",
+            ],
+            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
+            env={
+                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
+                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
+                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
+                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
+                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
+                "SERVER_UUID": get_uuid_str(),
+                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
+                "RUN_ID": optimize_form.saved_model_run_id,
+                "MODEL_PATH": optimize_form.saved_model_path,
+                "MODEL_NAME": optimize_form.model_name,
+            },
+            accelerator_type="cpu",
+        )
+
+        result = self.run_optimize_task(self.db, task_info)
+
+        return result
+
     def tensorrt(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
         """
         TensorRT 최적화 작업
         Args:
-            model_name: 모델 이름
             optimize_form: 최적화 폼
-            args: 추가 인자
         Returns:
             task_info: 최적화 작업 정보
         """
@@ -116,6 +169,92 @@ class OptimizeService:
                 "MODEL_NAME": optimize_form.model_name,
             },
             accelerator_type="nvidia.com/gpu",
+        )
+
+        result = self.run_optimize_task(self.db, task_info)
+
+        return result
+
+    def openvino(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
+        """
+        OpenVINO 최적화 작업
+        Args:
+            optimize_form: 최적화 폼
+        Returns:
+            task_info: 최적화 작업 정보
+        """
+
+        # 사용할 도커 이미지 경로
+        container_image: str = SETTINGS.OPENVINO_IMG # 변경 필요
+
+        # 최적화 작업 정보
+        task_info = OptimizationSetUp(
+            model_name=optimize_form.model_name,
+            optimize_name=SupportOptimize.OPENVINO.value,
+            docker_image_path=container_image,
+            command=[
+                "pipenv",
+                "run",
+                "python",
+                "main.py",
+            ],
+            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
+            env={
+                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
+                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
+                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
+                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
+                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
+                "SERVER_UUID": get_uuid_str(),
+                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
+                "RUN_ID": optimize_form.saved_model_run_id,
+                "MODEL_PATH": optimize_form.saved_model_path,
+                "MODEL_NAME": optimize_form.model_name,
+            },
+            accelerator_type="cpu",
+        )
+
+        result = self.run_optimize_task(self.db, task_info)
+
+        return result
+
+    def sklearn_onnx(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
+        """
+        sklearn-onnx 최적화 작업
+        Args:
+            optimize_form: 최적화 폼
+        Returns:
+            task_info: 최적화 작업 정보
+        """
+
+        # 사용할 도커 이미지 경로
+        container_image: str = SETTINGS.SKLEARN_ONNX_IMG # 변경 필요
+
+        # 최적화 작업 정보
+        task_info = OptimizationSetUp(
+            model_name=optimize_form.model_name,
+            optimize_name=SupportOptimize.SKLEARN_ONNX.value,
+            docker_image_path=container_image,
+            command=[
+                "pipenv",
+                "run",
+                "python",
+                "main.py",
+            ],
+            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
+            env={
+                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
+                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
+                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
+                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
+                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
+                "SERVER_UUID": get_uuid_str(),
+                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
+                "RUN_ID": optimize_form.saved_model_run_id,
+                "MODEL_PATH": optimize_form.saved_model_path,
+                "MODEL_NAME": optimize_form.model_name,
+            },
+            accelerator_type="cpu",
         )
 
         result = self.run_optimize_task(self.db, task_info)
