@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # DETR_RESNET50
     DETR_RESNET50: str
 
+    # Pruning
+    PRUNING_IMG: str
+
     # TENSORRT
     TENSORRT_IMG: str
 

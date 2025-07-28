@@ -36,6 +36,7 @@ class SupportOptimize(Enum):
     """
 
     PTQ = "ptq"
+    PRUNING = "pruning"
     TENSORRT = "tensorrt"
     OPENVINO = "openvino"
     SKLEARN_ONNX = "sklearn-onnx"
