@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     # SKLEARN_ONNX
     SKLEARN_ONNX_IMG: str
 
+    # NPU
+    NPU_IMG: str
+    TARGET_NPU_NAME: str
+
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
 

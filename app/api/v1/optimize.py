@@ -28,5 +28,7 @@ async def optimize(
         result = optimize_service.sklearn_onnx(optimize_form)
     elif optimizer_id == 4: # 4: pruning
         result = optimize_service.pruning(optimize_form)
+    elif optimizer_id == 5: # 5: npu
+        result = optimize_service.npu(optimize_form)
     # pruning, npu, tpu, quantization, etc.
     return result

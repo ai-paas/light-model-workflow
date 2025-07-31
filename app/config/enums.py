@@ -40,3 +40,4 @@ class SupportOptimize(Enum):
     TENSORRT = "tensorrt"
     OPENVINO = "openvino"
     SKLEARN_ONNX = "sklearn-onnx"
+    NPU = "npu"
