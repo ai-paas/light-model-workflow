@@ -11,13 +11,6 @@ dotenv_path = root_directory / ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
 
-class RDBName(Enum):
-    SQLITE = "sqlite+pysqlite"
-
-    def __str__(self):
-        return self.value
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=True,  # 대소문자 구분 허용
@@ -28,6 +21,12 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     DB_TYPE: str
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: str
+    DB_NAME: str
+
     # kubeflow 관련 설정
     KUBEFLOW_ENDPOINT: str
     KUBEFLOW_USERNAME: str
@@ -73,9 +72,8 @@ class Settings(BaseSettings):
 
     @property
     def get_db_uri(self) -> str:
-        """Environment variables로부터 DB 정보를 받아와 URI를 반환 (차후 DB 적용시 입력)"""
-        # return f"{self.DB_TYPE}://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        return f"{self.DB_TYPE}:///sqlite.db"
+        """Environment variables로부터 DB 정보를 받아와 URI를 반환"""
+        return f"{self.DB_TYPE}://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
 @lru_cache

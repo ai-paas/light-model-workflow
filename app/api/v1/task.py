@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.db.connect import SessionDepends
 from app.core.db.models.model_task import ModelTask
-from app.schemas.requests.task import PatchTaskForm
+from app.schemas.requests.task import PatchTaskForm, ReqModelTaskForm
+from app.services.model_task import ModelTaskService, get_model_task_service
 
 router = APIRouter()
 
@@ -15,44 +16,41 @@ router = APIRouter()
 @router.get("")
 def get_tasks(
     *,
-    db: Session = SessionDepends,
+    form: ReqModelTaskForm = Depends(ReqModelTaskForm),
+    model_task_service: ModelTaskService = Depends(get_model_task_service),
 ):
     """
     Get all tasks
+    
+    - 페이지네이션 적용
     """
-    tasks = db.query(ModelTask).all()
+    tasks = model_task_service.get_tasks(form)
     return tasks
 
 
 @router.get("/{task_id}")
-def get_task(*, db: Session = SessionDepends, task_id: str):
+def get_task(*, task_id: str, model_task_service: ModelTaskService = Depends(get_model_task_service)):
     """
     Get one task by task_id
-    """
 
-    task = db.query(ModelTask).filter(ModelTask.task_uuid == task_id).first()
+    - task uuid 를 통해 단일 조회
+    """
+    task = model_task_service.get_task_by_uuid(task_id)
     return task
 
 
 @router.patch("/{task_id}")
 def patch_task(
     *,
-    db: Session = SessionDepends,
     task_id: str,
     patch_task_form: PatchTaskForm,
+    model_task_service: ModelTaskService = Depends(get_model_task_service),
 ):
     """
     Patch one task by task_id
-    """
 
-    task = db.query(ModelTask).filter(ModelTask.task_uuid == task_id).first()
-    updates = {
-        "progress_status": patch_task_form.progress_status,
-        "model_path_output": patch_task_form.path_output_model,
-    }
-    if task:
-        for key, value in updates.items():
-            setattr(task, key, value)  # 속성 업데이트
-        db.commit()
-        db.refresh(task)
+    - 프로그레스 상태 업데이트
+    - 모델 경로 업데이트
+    """
+    task = model_task_service.patch_task(task_id, patch_task_form)
     return task

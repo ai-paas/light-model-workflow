@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Body
-from typing import Any
 
 from app.schemas.requests.optimize import ReqOptimizeWithNameAndArgsBody
 from app.services.optimize import OptimizeService, get_optimize_service

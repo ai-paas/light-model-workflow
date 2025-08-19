@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Any
 
 from app.config.enums import ModelLiteMapper
@@ -23,6 +23,7 @@ class OptimizationSetUp(BaseModel):
     """
     최적화 / 경량화 작업시 필요한 공통 정보
     """
+    model_config = ConfigDict(from_attributes=True, extra="allow", populate_by_name=True)
     model_name: str
     optimize_name: str
     docker_image_path: str

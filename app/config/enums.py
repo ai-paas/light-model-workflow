@@ -30,6 +30,12 @@ class SupportModel(Enum):
     DETR_Resnet50 = "detr-resnet50"
 
 
+class SupportAccelerator(Enum):
+    CPU = "cpu"
+    GPU = "nvidia.com/gpu"
+    NPU = "furiosa.ai/npu"
+
+
 class SupportOptimize(Enum):
     """
     지원하는 최적화 / 경량화

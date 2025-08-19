@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from kfp import dsl
+from kfp import dsl, Run
 
 from app.config.enums import SupportOptimize
 from app.core.db.connect import SessionDepends
@@ -75,8 +75,25 @@ class OptimizeService:
             namespace=SETTINGS.KUBEFLOW_NAMESPACE,
         )
 
-        # return run
-        # 이하 리팩토링 필요
+        return run
+        # # 이하 리팩토링 필요
+        # kubeflow_experiment_id = run.run_id
+        # uuid_str = task_info.env["SERVER_UUID"]
+
+        # new_task = ModelTask(
+        #     task_uuid=uuid_str,
+        #     model_name=task_info.model_name,
+        #     task_type=task_info.optimize_name,
+        #     kubeflow_experiment_id=kubeflow_experiment_id,
+        # )
+
+        # db.add(new_task)
+        # db.commit()
+
+        # return {"task_uuid": uuid_str, "kubeflow_experiment_id": kubeflow_experiment_id}
+
+
+    def _save_task_info(self, task_info: OptimizationSetUp, db: Session, run: Run):
         kubeflow_experiment_id = run.run_id
         uuid_str = task_info.env["SERVER_UUID"]
 
@@ -130,6 +147,8 @@ class OptimizeService:
 
         result = self.run_optimize_task(self.db, task_info)
 
+        self._save_task_info(task_info, self.db, result)
+
         return result
 
     def tensorrt(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
@@ -172,6 +191,8 @@ class OptimizeService:
         )
 
         result = self.run_optimize_task(self.db, task_info)
+
+        self._save_task_info(task_info, self.db, result)
 
         return result
 
@@ -216,6 +237,8 @@ class OptimizeService:
 
         result = self.run_optimize_task(self.db, task_info)
 
+        self._save_task_info(task_info, self.db, result)
+
         return result
 
     def sklearn_onnx(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
@@ -258,6 +281,54 @@ class OptimizeService:
         )
 
         result = self.run_optimize_task(self.db, task_info)
+
+        self._save_task_info(task_info, self.db, result)
+
+        return result
+
+    def npu(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
+        """
+        NPU 최적화 작업
+        Args:
+            optimize_form: 최적화 폼
+        Returns:
+            task_info: 최적화 작업 정보
+        """
+
+        # 사용할 도커 이미지 경로
+        container_image: str = SETTINGS.NPU_IMG # 변경 필요
+
+        # 최적화 작업 정보
+        task_info = OptimizationSetUp(
+            model_name=optimize_form.model_name,
+            optimize_name=SupportOptimize.NPU.value,
+            docker_image_path=container_image,
+            command=[
+                "pipenv",
+                "run",
+                "python",
+                "main.py",
+            ],
+            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
+            env={
+                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
+                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
+                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
+                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
+                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
+                "SERVER_UUID": get_uuid_str(),
+                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
+                "RUN_ID": optimize_form.saved_model_run_id,
+                "MODEL_PATH": optimize_form.saved_model_path,
+                "MODEL_NAME": optimize_form.model_name,
+                "TARGET_NPU_NAME": SETTINGS.TARGET_NPU_NAME,
+            },
+            accelerator_type="furiosa.ai/warboy",
+        )
+
+        result = self.run_optimize_task(self.db, task_info)
+
+        self._save_task_info(task_info, self.db, result)
 
         return result
 
