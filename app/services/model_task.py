@@ -16,7 +16,7 @@ class ModelTaskService:
         return self.model_task_repo.get_tasks(form)
 
     def patch_task(self, task_uuid: str, patch_task_form: PatchTaskForm):
-        return self.model_task_repo.patch_task(task_uuid, patch_task_form)
+        return self.model_task_repo.patch_task_status(task_uuid, patch_task_form)
 
 def get_model_task_service(model_task_repo: ModelTaskRepository = Depends(get_model_task_repository)):
     return ModelTaskService(model_task_repo)

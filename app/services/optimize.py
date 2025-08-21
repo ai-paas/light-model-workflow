@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from kfp import dsl, Run
+from kfp import dsl
+from kfp.client.client import RunPipelineResult
 
 from app.config.enums import SupportOptimize
 from app.core.db.connect import SessionDepends
@@ -9,6 +10,7 @@ from app.utils.kfp_client_manager import KFPClientManager
 from app.utils.uuid import get_uuid_str
 from app.schemas.services.types import OptimizationSetUp
 from app.schemas.requests.optimize import ReqOptimizeWithNameAndArgsBody
+from app.schemas.services.model_task import ModelTaskSchema
 
 SETTINGS = get_settings()
 
@@ -29,7 +31,7 @@ class OptimizeService:
         self.db = db
 
     @staticmethod
-    def run_optimize_task(db: Session, task_info: OptimizationSetUp):
+    def run_optimize_task(task_info: OptimizationSetUp):
         """
         최적화 작업 실행
         Args:
@@ -69,34 +71,20 @@ class OptimizeService:
 
         kfp_client = KFPClientManager().get_kfp_client()
 
-        run = kfp_client.create_run_from_pipeline_func(
+        run: RunPipelineResult = kfp_client.create_run_from_pipeline_func(
             experiment_name="aipaas-lite-model-workflow",
             pipeline_func=lite_model,
             namespace=SETTINGS.KUBEFLOW_NAMESPACE,
         )
 
         return run
-        # # 이하 리팩토링 필요
-        # kubeflow_experiment_id = run.run_id
-        # uuid_str = task_info.env["SERVER_UUID"]
-
-        # new_task = ModelTask(
-        #     task_uuid=uuid_str,
-        #     model_name=task_info.model_name,
-        #     task_type=task_info.optimize_name,
-        #     kubeflow_experiment_id=kubeflow_experiment_id,
-        # )
-
-        # db.add(new_task)
-        # db.commit()
-
-        # return {"task_uuid": uuid_str, "kubeflow_experiment_id": kubeflow_experiment_id}
 
 
-    def _save_task_info(self, task_info: OptimizationSetUp, db: Session, run: Run):
+    def _save_task_info(self, task_info: OptimizationSetUp, run: RunPipelineResult):
         kubeflow_experiment_id = run.run_id
         uuid_str = task_info.env["SERVER_UUID"]
 
+        # todo: repository 적용
         new_task = ModelTask(
             task_uuid=uuid_str,
             model_name=task_info.model_name,
@@ -104,8 +92,8 @@ class OptimizeService:
             kubeflow_experiment_id=kubeflow_experiment_id,
         )
 
-        db.add(new_task)
-        db.commit()
+        self.db.add(new_task)
+        self.db.commit()
 
         return {"task_uuid": uuid_str, "kubeflow_experiment_id": kubeflow_experiment_id}
 
@@ -145,7 +133,7 @@ class OptimizeService:
             accelerator_type="cpu",
         )
 
-        result = self.run_optimize_task(self.db, task_info)
+        result = self.run_optimize_task(task_info)
 
         self._save_task_info(task_info, self.db, result)
 
@@ -190,7 +178,7 @@ class OptimizeService:
             accelerator_type="nvidia.com/gpu",
         )
 
-        result = self.run_optimize_task(self.db, task_info)
+        result = self.run_optimize_task(task_info)
 
         self._save_task_info(task_info, self.db, result)
 
@@ -235,7 +223,7 @@ class OptimizeService:
             accelerator_type="cpu",
         )
 
-        result = self.run_optimize_task(self.db, task_info)
+        result = self.run_optimize_task(task_info)
 
         self._save_task_info(task_info, self.db, result)
 
@@ -280,7 +268,7 @@ class OptimizeService:
             accelerator_type="cpu",
         )
 
-        result = self.run_optimize_task(self.db, task_info)
+        result = self.run_optimize_task(task_info)
 
         self._save_task_info(task_info, self.db, result)
 
@@ -326,7 +314,7 @@ class OptimizeService:
             accelerator_type="furiosa.ai/warboy",
         )
 
-        result = self.run_optimize_task(self.db, task_info)
+        result = self.run_optimize_task(task_info)
 
         self._save_task_info(task_info, self.db, result)
 
@@ -372,6 +360,6 @@ class OptimizeService:
             accelerator_type="furiosa.ai/warboy",
         )
 
-        result = self.run_optimize_task(self.db, task_info)
+        result = self.run_optimize_task(task_info)
 
         return result
