@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PageReq(BaseModel):
-    page_num: int = 1
-    page_size: int = 10
+    page_num: int = Field(default=1, ge=1)
+    page_size: int = Field(default=10, ge=1)
     # 추후 sort 고려
 
     @property

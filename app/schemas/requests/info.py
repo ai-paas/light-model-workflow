@@ -8,4 +8,4 @@ class ReqModelInfoForm(PageReq):
 
 class ReqOptimizerInfoForm(PageReq):
     name: str | None = None
-    model_id: str | None = None
+    model_id: int | None = None

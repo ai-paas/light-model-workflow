@@ -18,8 +18,10 @@ class ModelTaskRepository:
 
         - 모델 저장 요청시 생성
 
-        :param model_task: ModelTask
-        :return: ModelTask
+        Args:
+            model_task: ModelTask
+        Returns:
+            ModelTask
         """
         self.db.add(model_task)
         self.db.commit()
@@ -32,8 +34,10 @@ class ModelTaskRepository:
 
         - 모델 저장 요청시 생성
 
-        :param model_task: ModelTask
-        :return: ModelTask
+        Args:
+            model_task: ModelTask
+        Returns:
+            ModelTask
         """
         model_task = ModelTask.from_schema(model_task_schema)
         self.db.add(model_task)
