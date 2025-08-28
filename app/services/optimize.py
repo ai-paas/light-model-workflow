@@ -1,34 +1,34 @@
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from kfp import dsl
 from kfp.client.client import RunPipelineResult
 
 from app.config.enums import SupportOptimize
-from app.core.db.connect import SessionDepends
-from app.core.db.models.model_task import ModelTask
 from app.core.settings import get_settings
-from app.utils.kfp_client_manager import KFPClientManager
-from app.utils.uuid import get_uuid_str
+from app.core.repo.model_task import get_model_task_repository, ModelTaskRepository
+from app.core.repo.optimizer_info import get_optimizer_info_repository, OptimizerInfoRepository
 from app.schemas.services.types import OptimizationSetUp
 from app.schemas.requests.optimize import ReqOptimizeWithNameAndArgsBody
 from app.schemas.services.model_task import ModelTaskSchema
+from app.utils.kfp_client_manager import KFPClientManager
+from app.utils.uuid import get_uuid_str
+from app.schemas.services.optimizer_info import OptimizerInfo
 
 SETTINGS = get_settings()
 
 
-def get_optimize_service(db: Session = SessionDepends):
-    """
-    최적화 서비스 레이어 의존성 주입을 위한 함수
-    Args:
-        db: 데이터베이스 세션 의존성
-    Returns:
-        OptimizeService: 최적화 서비스 레이어 인스턴스
-    """
-    return OptimizeService(db=db)
+def get_optimize_service(
+    model_task_repo: ModelTaskRepository = Depends(get_model_task_repository),
+    optimizer_info_repo: OptimizerInfoRepository = Depends(get_optimizer_info_repository),
+):
+
+    return OptimizeService(model_task_repo=model_task_repo, optimizer_info_repo=optimizer_info_repo)
 
 
 class OptimizeService:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, model_task_repo: ModelTaskRepository, optimizer_info_repo: OptimizerInfoRepository):
+        self.model_task_repo = model_task_repo
+        self.optimizer_info_repo = optimizer_info_repo
 
     @staticmethod
     def run_optimize_task(task_info: OptimizationSetUp):
@@ -62,6 +62,8 @@ class OptimizeService:
                 accelerator_type: str = task_info.accelerator_type
                 lite_model_task.set_accelerator_limit(1)  # container_spec.resources.accelerator_limit
                 lite_model_task.container_spec.resources.accelerator_type = accelerator_type
+            # Kubeflow 파이프라인 캐시 비활성화
+            lite_model_task.set_caching_options(False)
 
             # 환경변수 설정
             for key, value in task_info.env.items():
@@ -85,76 +87,38 @@ class OptimizeService:
         uuid_str = task_info.env["SERVER_UUID"]
 
         # todo: repository 적용
-        new_task = ModelTask(
+        new_task = ModelTaskSchema(
             task_uuid=uuid_str,
             model_name=task_info.model_name,
             task_type=task_info.optimize_name,
             kubeflow_experiment_id=kubeflow_experiment_id,
         )
 
-        self.db.add(new_task)
-        self.db.commit()
+        self.model_task_repo.insert_model_task(new_task)
 
         return {"task_uuid": uuid_str, "kubeflow_experiment_id": kubeflow_experiment_id}
 
-    def pruning(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
+    def optimize(self, optimizer_id: int, optimize_form: ReqOptimizeWithNameAndArgsBody):
         """
-        Pruning 경량화 작업
-        Args:
-            optimize_form: 경량화 폼
-        Returns:
-            task_info: 경량화 작업 정보
-        """
-        container_image: str = SETTINGS.PRUNING_IMG # 변경 필요
-        
-        task_info = OptimizationSetUp(
-            model_name=optimize_form.model_name,
-            optimize_name=SupportOptimize.PRUNING.value,
-            docker_image_path=container_image,
-            command=[
-                "pipenv",
-                "run",
-                "python",
-                "main.py",
-            ],
-            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
-            env={
-                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
-                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
-                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
-                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
-                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
-                "SERVER_UUID": get_uuid_str(),
-                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
-                "RUN_ID": optimize_form.saved_model_run_id,
-                "MODEL_PATH": optimize_form.saved_model_path,
-                "MODEL_NAME": optimize_form.model_name,
-            },
-            accelerator_type="cpu",
-        )
-
-        result = self.run_optimize_task(task_info)
-
-        self._save_task_info(task_info, self.db, result)
-
-        return result
-
-    def tensorrt(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
-        """
-        TensorRT 최적화 작업
+        최적화 작업
         Args:
             optimize_form: 최적화 폼
         Returns:
             task_info: 최적화 작업 정보
         """
+        optimizer = self.optimizer_info_repo.get_optimizer_info_by_id(optimizer_id)
+        if not optimizer:
+            raise HTTPException(status_code=404, detail="Optimizer not found")
 
         # 사용할 도커 이미지 경로
-        container_image: str = SETTINGS.TENSORRT_IMG # 변경 필요
+        container_image: str = getattr(SETTINGS, f"{optimizer.optimizer_name.upper()}_IMG")
+        if not container_image:
+            raise HTTPException(status_code=500, detail="Container image not found")
 
         # 최적화 작업 정보
         task_info = OptimizationSetUp(
             model_name=optimize_form.model_name,
-            optimize_name=SupportOptimize.TENSORRT.value,
+            optimize_name=optimizer.optimizer_name,
             docker_image_path=container_image,
             command=[
                 "pipenv",
@@ -175,191 +139,12 @@ class OptimizeService:
                 "MODEL_PATH": optimize_form.saved_model_path,
                 "MODEL_NAME": optimize_form.model_name,
             },
-            accelerator_type="nvidia.com/gpu",
+            accelerator_type=optimizer.accelerator,
         )
+        # NPU 최적화 작업 시 환경변수 추가
+        if optimizer.optimizer_name == SupportOptimize.NPU.value:
+            task_info.env["TARGET_NPU_NAME"] = SETTINGS.TARGET_NPU_NAME
 
         result = self.run_optimize_task(task_info)
 
-        self._save_task_info(task_info, self.db, result)
-
-        return result
-
-    def openvino(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
-        """
-        OpenVINO 최적화 작업
-        Args:
-            optimize_form: 최적화 폼
-        Returns:
-            task_info: 최적화 작업 정보
-        """
-
-        # 사용할 도커 이미지 경로
-        container_image: str = SETTINGS.OPENVINO_IMG # 변경 필요
-
-        # 최적화 작업 정보
-        task_info = OptimizationSetUp(
-            model_name=optimize_form.model_name,
-            optimize_name=SupportOptimize.OPENVINO.value,
-            docker_image_path=container_image,
-            command=[
-                "pipenv",
-                "run",
-                "python",
-                "main.py",
-            ],
-            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
-            env={
-                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
-                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
-                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
-                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
-                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
-                "SERVER_UUID": get_uuid_str(),
-                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
-                "RUN_ID": optimize_form.saved_model_run_id,
-                "MODEL_PATH": optimize_form.saved_model_path,
-                "MODEL_NAME": optimize_form.model_name,
-            },
-            accelerator_type="cpu",
-        )
-
-        result = self.run_optimize_task(task_info)
-
-        self._save_task_info(task_info, self.db, result)
-
-        return result
-
-    def sklearn_onnx(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
-        """
-        sklearn-onnx 최적화 작업
-        Args:
-            optimize_form: 최적화 폼
-        Returns:
-            task_info: 최적화 작업 정보
-        """
-
-        # 사용할 도커 이미지 경로
-        container_image: str = SETTINGS.SKLEARN_ONNX_IMG # 변경 필요
-
-        # 최적화 작업 정보
-        task_info = OptimizationSetUp(
-            model_name=optimize_form.model_name,
-            optimize_name=SupportOptimize.SKLEARN_ONNX.value,
-            docker_image_path=container_image,
-            command=[
-                "pipenv",
-                "run",
-                "python",
-                "main.py",
-            ],
-            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
-            env={
-                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
-                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
-                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
-                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
-                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
-                "SERVER_UUID": get_uuid_str(),
-                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
-                "RUN_ID": optimize_form.saved_model_run_id,
-                "MODEL_PATH": optimize_form.saved_model_path,
-                "MODEL_NAME": optimize_form.model_name,
-            },
-            accelerator_type="cpu",
-        )
-
-        result = self.run_optimize_task(task_info)
-
-        self._save_task_info(task_info, self.db, result)
-
-        return result
-
-    def npu(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
-        """
-        NPU 최적화 작업
-        Args:
-            optimize_form: 최적화 폼
-        Returns:
-            task_info: 최적화 작업 정보
-        """
-
-        # 사용할 도커 이미지 경로
-        container_image: str = SETTINGS.NPU_IMG # 변경 필요
-
-        # 최적화 작업 정보
-        task_info = OptimizationSetUp(
-            model_name=optimize_form.model_name,
-            optimize_name=SupportOptimize.NPU.value,
-            docker_image_path=container_image,
-            command=[
-                "pipenv",
-                "run",
-                "python",
-                "main.py",
-            ],
-            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
-            env={
-                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
-                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
-                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
-                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
-                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
-                "SERVER_UUID": get_uuid_str(),
-                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
-                "RUN_ID": optimize_form.saved_model_run_id,
-                "MODEL_PATH": optimize_form.saved_model_path,
-                "MODEL_NAME": optimize_form.model_name,
-                "TARGET_NPU_NAME": SETTINGS.TARGET_NPU_NAME,
-            },
-            accelerator_type="furiosa.ai/warboy",
-        )
-
-        result = self.run_optimize_task(task_info)
-
-        self._save_task_info(task_info, self.db, result)
-
-        return result
-
-    def npu(self, optimize_form: ReqOptimizeWithNameAndArgsBody):
-        """
-        NPU 최적화 작업
-        Args:
-            optimize_form: 최적화 폼
-        Returns:
-            task_info: 최적화 작업 정보
-        """
-
-        # 사용할 도커 이미지 경로
-        container_image: str = SETTINGS.NPU_IMG # 변경 필요
-
-        # 최적화 작업 정보
-        task_info = OptimizationSetUp(
-            model_name=optimize_form.model_name,
-            optimize_name=SupportOptimize.NPU.value,
-            docker_image_path=container_image,
-            command=[
-                "pipenv",
-                "run",
-                "python",
-                "main.py",
-            ],
-            args=[f"--{key} {value}" for key, value in optimize_form.args.items()],
-            env={
-                "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
-                "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
-                "MLFLOW_TRACKING_URI": SETTINGS.MLFLOW_TRACKING_URL,
-                "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
-                "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
-                "SERVER_UUID": get_uuid_str(),
-                "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
-                "RUN_ID": optimize_form.saved_model_run_id,
-                "MODEL_PATH": optimize_form.saved_model_path,
-                "MODEL_NAME": optimize_form.model_name,
-                "TARGET_NPU_NAME": SETTINGS.TARGET_NPU_NAME,
-            },
-            accelerator_type="furiosa.ai/warboy",
-        )
-
-        result = self.run_optimize_task(task_info)
-
-        return result
+        return self._save_task_info(task_info, result)

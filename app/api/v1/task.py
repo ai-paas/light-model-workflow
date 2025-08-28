@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
-from app.core.db.connect import SessionDepends
-from app.core.db.models.model_task import ModelTask
-from app.schemas.requests.task import PatchTaskForm, ReqModelTaskForm
+from app.schemas.requests.task import ReqModelTaskPageForm, PatchTaskForm
 from app.services.model_task import ModelTaskService, get_model_task_service
 
 router = APIRouter()
@@ -16,7 +13,7 @@ router = APIRouter()
 @router.get("")
 def get_tasks(
     *,
-    form: ReqModelTaskForm = Depends(ReqModelTaskForm),
+    form: ReqModelTaskPageForm = Depends(ReqModelTaskPageForm),
     model_task_service: ModelTaskService = Depends(get_model_task_service),
 ):
     """

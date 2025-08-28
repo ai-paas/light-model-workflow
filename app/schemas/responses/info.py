@@ -22,7 +22,8 @@ class RespModelInfoPage(RespPagination):
         if self.next_page_num:
             url_params = self.url_params
             url_params["page_num"] = str(self.next_page_num)
-            return f"/api/v1/info/model?{urlencode(url_params)}"
+            url_params_str = ("?" + urlencode(url_params)) if url_params else ""
+            return f"/api/v1/info/model{url_params_str}"
         return None
 
     @computed_field
@@ -31,7 +32,8 @@ class RespModelInfoPage(RespPagination):
         if self.prev_page_num:
             url_params = self.url_params
             url_params["page_num"] = str(self.prev_page_num)
-            return f"/api/v1/info/model?{urlencode(url_params)}"
+            url_params_str = ("?" + urlencode(url_params)) if url_params else ""
+            return f"/api/v1/info/model{url_params_str}"
         return None
 
 
@@ -46,7 +48,8 @@ class RespOptimizerInfoPage(RespPagination):
         if self.next_page_num:
             url_params = self.url_params
             url_params["page_num"] = str(self.next_page_num)
-            return f"/api/v1/info/optimizer?{urlencode(url_params)}"
+            url_params_str = ("?" + urlencode(url_params)) if url_params else ""
+            return f"/api/v1/info/optimizer{url_params_str}"
         return None
 
     @computed_field
@@ -55,5 +58,6 @@ class RespOptimizerInfoPage(RespPagination):
         if self.prev_page_num:
             url_params = self.url_params
             url_params["page_num"] = str(self.prev_page_num)
-            return f"/api/v1/info/optimizer?{urlencode(url_params)}"
+            url_params_str = ("?" + urlencode(url_params)) if url_params else ""
+            return f"/api/v1/info/optimizer{url_params_str}"
         return None

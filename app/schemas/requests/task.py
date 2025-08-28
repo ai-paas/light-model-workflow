@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from app.schemas.requests.base import PageReq
 
 class PatchTaskForm(BaseModel):
     """
@@ -18,8 +19,13 @@ class ReqModelTaskForm(BaseModel):
     모델 최적화 작업 조회 시 사용되는 Form
     """
 
-    page_num: int = 0
-    page_size: int = 10
     model_name_query: str | None = None
-    optimize_name_query: str | None = None
+    optimizer_name_query: str | None = None
     task_status: str | None = None
+
+
+class ReqModelTaskPageForm(PageReq, ReqModelTaskForm):
+    """
+    페이지네이션 적용된 모델 최적화 작업 조회 시 사용되는 Form
+    """
+    ...

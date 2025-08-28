@@ -33,12 +33,18 @@ class ModelTask(Base):
 
     @classmethod
     def from_schema(cls, task_info: ModelTaskSchema) -> "ModelTask":
-        return cls(**task_info.model_dump())
+        return cls(
+            model_name=task_info.model_name,
+            progress_status=task_info.progress_status,
+            model_path_output=task_info.model_path_output,
+            kubeflow_experiment_id=task_info.kubeflow_experiment_id,
+            task_uuid=task_info.task_uuid,
+            task_type=task_info.task_type,
+        )
 
     def to_schema(self) -> ModelTaskSchema:
         return ModelTaskSchema(
             model_name=self.model_name,
-            optimize_name=self.task_type,
             progress_status=self.progress_status,
             model_path_output=self.model_path_output,
             kubeflow_experiment_id=self.kubeflow_experiment_id,

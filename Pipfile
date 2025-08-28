@@ -36,7 +36,7 @@ websockets = "==13.1"
 pipfile = "*"
 uvicorn = {extras = ["standard"] }
 kfp = "==2.9.0"
-psycopg2-binary = "==2.9.9"
+pymysql = "==1.1.1"
 
 [dev-packages]
 

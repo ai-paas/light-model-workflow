@@ -1,5 +1,4 @@
 from sqlalchemy import select, func
-from sqlalchemy.orm import joinedload
 
 from app.core.db.session import SessionLocal
 from app.core.db.connect import SessionDepends

@@ -1,9 +1,9 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.db.models.model_task import ModelTask
 from app.core.db.session import SessionLocal
 from app.core.db.connect import SessionDepends
-from app.schemas.requests.task import PatchTaskForm, ReqModelTaskForm
+from app.schemas.requests.task import ReqModelTaskPageForm, PatchTaskForm, ReqModelTaskForm
 from app.schemas.services.model_task import ModelTaskSchema
 from app.utils.uuid import str_to_uuid4
 
@@ -11,6 +11,27 @@ from app.utils.uuid import str_to_uuid4
 class ModelTaskRepository:
     def __init__(self, db: SessionLocal):
         self.db = db
+
+    def __apply_sort_and_paginate(self, statement: select, form: ReqModelTaskPageForm) -> select:
+        """
+        정렬 및 페이지네이션 적용
+        - 기본 정렬 조건: id 내림차순
+        """
+        statement = statement.order_by(ModelTask.id.desc())
+        statement = statement.offset(form.offset).limit(form.limit)
+        return statement
+
+    def __apply_filter(self, statement: select, form: ReqModelTaskForm) -> select:
+        """
+        필터 적용
+        - 모델 이름 필터
+        - 최적화 방식 필터
+        - 작업 상태 필터
+        """
+        statement = statement.where(ModelTask.model_name.ilike(f"%{form.model_name_query}%")) if form.model_name_query else statement
+        statement = statement.where(ModelTask.task_type.ilike(f"%{form.optimizer_name_query}%")) if form.optimizer_name_query else statement
+        statement = statement.where(ModelTask.progress_status.ilike(f"%{form.task_status}%")) if form.task_status else statement
+        return statement
 
     def create_model_task(self, model_task: ModelTask):
         """
@@ -59,15 +80,30 @@ class ModelTaskRepository:
         최적화/경량화 작업 요청 기록
         """
         statement = select(ModelTask)
-        statement = statement.where(ModelTask.model_name.ilike(f"%{form.model_name_query}%")) if form.model_name_query else statement
-        statement = statement.where(ModelTask.task_type.ilike(f"%{form.optimize_name_query}%")) if form.optimize_name_query else statement
-        statement = statement.where(ModelTask.progress_status.ilike(f"%{form.task_status}%")) if form.task_status else statement
-        statement = statement.offset(form.page_num * form.page_size).limit(form.page_size)
+        statement = self.__apply_filter(statement, form)
         result = self.db.execute(statement).scalars().all()
 
         return [model_task.to_schema() for model_task in result]
 
-    def patch_task_status(self, task_uuid: str, patch_task_form: PatchTaskForm):
+    def get_tasks_paginated(self, form: ReqModelTaskPageForm) -> list[ModelTaskSchema]:
+        """
+        최적화/경량화 작업 요청 기록
+        """
+        statement = select(ModelTask)
+        statement = self.__apply_filter(statement, form)
+        statement = self.__apply_sort_and_paginate(statement, form)
+        result = self.db.execute(statement).scalars().all()
+        return [model_task.to_schema() for model_task in result]
+
+    def get_tasks_count(self, form: ReqModelTaskForm) -> int:
+        """
+        최적화/경량화 작업 요청 기록 개수 조회
+        """
+        statement = select(func.count(ModelTask.id))
+        statement = self.__apply_filter(statement, form)
+        return self.db.execute(statement).scalar_one_or_none()
+
+    def patch_task_status(self, task_uuid: str, patch_task_form: PatchTaskForm) -> ModelTaskSchema:
         """
         최적화/경량화 작업 요청 상태 수정
         """
