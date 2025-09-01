@@ -1,7 +1,7 @@
 from fastapi import Depends
 
 from app.core.repo.model_task import ModelTaskRepository, get_model_task_repository
-from app.schemas.requests.task import PatchTaskForm, ReqModelTaskForm
+from app.schemas.requests.task import PatchTaskForm, ReqModelTaskForm, ReqModelTaskPageForm
 from app.schemas.responses.model_task import RespModelTaskPage
 from app.schemas.services.model_task import ModelTaskSchema
 
@@ -16,7 +16,7 @@ class ModelTaskService:
     def get_tasks(self, form: ReqModelTaskForm) -> list[ModelTaskSchema]:
         return self.model_task_repo.get_tasks(form)
 
-    def get_task_paginated(self, form: ReqModelTaskForm) -> RespModelTaskPage:
+    def get_task_paginated(self, form: ReqModelTaskPageForm) -> RespModelTaskPage:
         task_list = self.model_task_repo.get_tasks_paginated(form)
         total_count = self.model_task_repo.get_tasks_count(form)
         return RespModelTaskPage(

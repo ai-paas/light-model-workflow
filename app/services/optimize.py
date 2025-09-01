@@ -12,7 +12,6 @@ from app.schemas.requests.optimize import ReqOptimizeWithNameAndArgsBody
 from app.schemas.services.model_task import ModelTaskSchema
 from app.utils.kfp_client_manager import KFPClientManager
 from app.utils.uuid import get_uuid_str
-from app.schemas.services.optimizer_info import OptimizerInfo
 
 SETTINGS = get_settings()
 
