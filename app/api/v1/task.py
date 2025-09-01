@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.schemas.requests.task import ReqModelTaskPageForm, PatchTaskForm
 from app.services.model_task import ModelTaskService, get_model_task_service
+from app.schemas.responses.model_task import RespModelTaskPage
 
 router = APIRouter()
 
@@ -15,13 +16,13 @@ def get_tasks(
     *,
     form: ReqModelTaskPageForm = Depends(ReqModelTaskPageForm),
     model_task_service: ModelTaskService = Depends(get_model_task_service),
-):
+) -> RespModelTaskPage:
     """
     Get all tasks
     
     - 페이지네이션 적용
     """
-    tasks = model_task_service.get_tasks(form)
+    tasks = model_task_service.get_task_paginated(form)
     return tasks
 
 

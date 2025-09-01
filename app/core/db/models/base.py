@@ -26,9 +26,13 @@ class IntegerPrimaryKey(DeclarativeBase):
     )
 
 
-class IDwithTimestamp(IntegerPrimaryKey):
+class FullTimestamp(DeclarativeBase):
     """
-    ID with timestamp
+    Timestamped model
+
+    - created_at: 생성일시
+    - updated_at: 수정일시
+    - deleted_at: 삭제일시
     """
     __abstract__ = True
     created_at: MappedColumn[datetime] = mapped_column(
@@ -43,3 +47,10 @@ class IDwithTimestamp(IntegerPrimaryKey):
         DateTime,
         nullable=True,
     )
+
+
+class IDwithTimestamp(IntegerPrimaryKey, FullTimestamp):
+    """
+    ID with timestamp
+    """
+    __abstract__ = True

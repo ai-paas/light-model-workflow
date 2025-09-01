@@ -15,9 +15,9 @@ class ModelTaskRepository:
     def __apply_sort_and_paginate(self, statement: select, form: ReqModelTaskPageForm) -> select:
         """
         정렬 및 페이지네이션 적용
-        - 기본 정렬 조건: id 내림차순
+        - 기본 정렬 조건: 생성일시 내림차순
         """
-        statement = statement.order_by(ModelTask.id.desc())
+        statement = statement.order_by(ModelTask.created_at.desc())
         statement = statement.offset(form.offset).limit(form.limit)
         return statement
 
@@ -99,7 +99,7 @@ class ModelTaskRepository:
         """
         최적화/경량화 작업 요청 기록 개수 조회
         """
-        statement = select(func.count(ModelTask.id))
+        statement = select(func.count(ModelTask.pk))
         statement = self.__apply_filter(statement, form)
         return self.db.execute(statement).scalar_one_or_none()
 

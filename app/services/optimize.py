@@ -142,7 +142,8 @@ class OptimizeService:
             accelerator_type=optimizer.accelerator,
         )
         # NPU 최적화 작업 시 환경변수 추가
-        if optimizer.optimizer_name == SupportOptimize.NPU.value:
+        if optimizer.optimizer_name == SupportOptimize.NPU.value \
+                and not optimize_form.args.get("target_npu_name"):
             task_info.env["TARGET_NPU_NAME"] = SETTINGS.TARGET_NPU_NAME
 
         result = self.run_optimize_task(task_info)

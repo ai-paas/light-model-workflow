@@ -1,12 +1,12 @@
 from sqlalchemy import String
 from sqlalchemy.orm import MappedColumn, mapped_column
 
-from app.core.db.models.base import Base
+from app.core.db.models.base import Base, FullTimestamp
 from app.schemas.services.model_task import ModelTaskSchema
 
 
 # TDOO: 컬럼 분리 및 관계 설정
-class ModelTask(Base):
+class ModelTask(Base, FullTimestamp):
     __tablename__ = "model_tasks"
 
     # 모델 저장 요청별 uuid
