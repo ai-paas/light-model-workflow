@@ -70,7 +70,11 @@ class OptimizeService:
 
         # 정의된 함수로 파이프라인 생성
 
-        kfp_client = KFPClientManager().get_kfp_client()
+        kfp_client = KFPClientManager(
+            kubeflow_endpoint=SETTINGS.KUBEFLOW_ENDPOINT,
+            kubeflow_username=SETTINGS.KUBEFLOW_USERNAME,
+            kubeflow_password=SETTINGS.KUBEFLOW_PASSWORD,
+        ).get_kfp_client()
 
         run: RunPipelineResult = kfp_client.create_run_from_pipeline_func(
             experiment_name="aipaas-lite-model-workflow",

@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     NPU_IMG: str
     TARGET_NPU_NAME: str
 
+    # TPU
+    TPU_IMG: str
+
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
 

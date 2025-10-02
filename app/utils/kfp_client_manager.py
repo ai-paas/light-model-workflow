@@ -21,6 +21,9 @@ class KFPClientManager:
 
     def __init__(
         self,
+        kubeflow_endpoint: str = None,
+        kubeflow_username: str = None,
+        kubeflow_password: str = None,
     ):
         """
         Initialize the KfpClient
@@ -30,10 +33,10 @@ class KFPClientManager:
         : dex_password: the Dex password
         : dex_auth_type: the auth type to use if Dex has multiple enabled, one of: ['ldap', 'local']
         """
-        self._api_url = f"{settings.KUBEFLOW_ENDPOINT}/pipeline"
+        self._api_url = f"{kubeflow_endpoint}/pipeline"
         self._skip_tls_verify = True
-        self._dex_username = settings.KUBEFLOW_USERNAME
-        self._dex_password = settings.KUBEFLOW_PASSWORD
+        self._dex_username = kubeflow_username
+        self._dex_password = kubeflow_password
         self._dex_auth_type = "local"
         self._client = None
         # disable SSL verification, if requested
@@ -137,7 +140,7 @@ class KFPClientManager:
         try:
             session_cookies = self._get_session_cookies()
         except Exception as ex:
-            raise RuntimeError(f"Failed to get Dex session cookies") from ex
+            raise RuntimeError("Failed to get Dex session cookies") from ex
         # monkey patch the kfp.Client to support disabling SSL verification
         # kfp only added support in v2: https://github.com/kubeflow/pipelines/pull/7174
         original_load_config = kfp.Client._load_config
