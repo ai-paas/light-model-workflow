@@ -82,3 +82,15 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings():
     return Settings()
+
+@lru_cache
+def get_common_env():
+    SETTINGS = get_settings()
+    return {
+        "MLFLOW_TRACKING_URL": SETTINGS.MLFLOW_TRACKING_URL,
+        "MLFLOW_S3_ENDPOINT_URL": SETTINGS.MLFLOW_S3_ENDPOINT_URL,
+        "AWS_ACCESS_KEY_ID": SETTINGS.AWS_ACCESS_KEY_ID,
+        "AWS_SECRET_ACCESS_KEY": SETTINGS.AWS_SECRET_ACCESS_KEY,
+        "MLFLOW_HTTP_REQUEST_TIMEOUT": SETTINGS.MLFLOW_HTTP_REQUEST_TIMEOUT,
+        "SERVER_PATH": f"{SETTINGS.SERVER_URL}/api/v1/tasks",
+    }

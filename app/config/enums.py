@@ -45,5 +45,6 @@ class SupportOptimize(Enum):
     PRUNING = "pruning"
     TENSORRT = "tensorrt"
     OPENVINO = "openvino"
-    SKLEARN_ONNX = "sklearn-onnx"
+    SKLEARN_ONNX = "sklearn_onnx"
     NPU = "npu"
+    TPU = "tpu"

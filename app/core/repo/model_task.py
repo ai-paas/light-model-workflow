@@ -30,7 +30,10 @@ class ModelTaskRepository:
         """
         statement = statement.where(ModelTask.model_name.ilike(f"%{form.model_name_query}%")) if form.model_name_query else statement
         statement = statement.where(ModelTask.task_type.ilike(f"%{form.optimizer_name_query}%")) if form.optimizer_name_query else statement
-        statement = statement.where(ModelTask.progress_status.ilike(f"%{form.task_status}%")) if form.task_status else statement
+        if form.task_status:
+            # 문자열을 불린으로 변환 ("true", "True", "1" -> True, 그 외 -> False)
+            task_status_bool = form.task_status.lower() in ("true", "1", "yes")
+            statement = statement.where(ModelTask.progress_status == task_status_bool)
         return statement
 
     def create_model_task(self, model_task: ModelTask):

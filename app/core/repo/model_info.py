@@ -32,6 +32,7 @@ class ModelInfoRepository:
         - 모델 이름 필터
         """
         statement = statement.where(ModelInfo.model_name.ilike(f"%{form.name}%")) if form.name else statement
+        statement = statement.where(ModelInfo.deleted_at.is_(None))
         return statement
 
     def __apply_subquery(self, statement: select, form: ReqModelInfoForm) -> select:

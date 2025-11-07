@@ -31,6 +31,7 @@ class OptimizerInfoRepository:
         - 최적화 도구 이름 필터
         """
         statement = statement.where(OptimizerInfo.optimizer_name.ilike(f"%{form.name}%")) if form.name else statement
+        statement = statement.where(OptimizerInfo.deleted_at.is_(None))
         return statement
 
     def __apply_subquery(self, statement: select, form: ReqOptimizerInfoForm) -> select:
