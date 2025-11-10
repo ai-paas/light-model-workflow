@@ -36,7 +36,7 @@ Lite-Model-Workflow의 주요 기능은 다음과 같습니다.
 참고: [써로마인드 개발 체계](https://surromind.atlassian.net/wiki/spaces/SURROMIND/pages/69533764)
 
 # Version
-**Python**: 3.8
+**Python**: 3.10
 
 **Kubeflow**: 1.8
 
@@ -64,9 +64,36 @@ KUBEFLOW_NAMESPACE=str
 # 서버의 아이피와 포트 IP:PORT
 SERVER_URL=str
 
+# db 연결 정보
+DB_TYPE=str
+DB_USER=str
+DB_PASSWORD=str
+DB_HOST=str
+DB_PORT=int
+DB_NAME=str
+
 # MLFLOW 설정
 MLFLOW_TRACKING_URL=str
 MLFLOW_S3_ENDPOINT_URL=str
+MLFLOW_HTTP_REQUEST_TIMEOUT=str
+AWS_ACCESS_KEY_ID=str
+AWS_SECRET_ACCESS_KEY=str
+
+# 개발 환경에서만 True, 이외 False
+DEBUG=bool
+
+# harbor 이미지 경로
+BERT_TRT=str
+BERT_OPENVINO=str
+OWLV2_PTQ=str
+DETR_RESNET50=str
+# 2차년도 이미지 경로
+TENSORRT_IMG=str
+OPENVINO_IMG=str
+SKLEARN_ONNX_IMG=str
+NPU_IMG=str
+TARGET_NPU_NAME=str
+TPU_IMG=str
 ```
 
 3. 서버 실행
